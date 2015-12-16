@@ -12,6 +12,7 @@ lazy val logback = Seq(
 )
 
 libraryDependencies ++= Seq(
+  "org.ensime" %% "jerk" % "0.9.10-SNAPSHOT",
   "org.suecarter" % "simple-spray-websockets_2.11" % "1.0",
   "com.lihaoyi" %% "ammonite-ops" % "0.5.1",
   "org.scalatest" %% "scalatest" % "2.2.5" % "test"

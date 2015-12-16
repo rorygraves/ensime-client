@@ -1,17 +1,26 @@
 package org.ensime.client
 
+import java.io.{InputStreamReader, BufferedReader, InputStream}
+
+import akka.actor.ActorSystem
 import ammonite.ops._
 import org.slf4j.LoggerFactory
 
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 
-class EnsimeSetup(projectRoot: Path) {
+class EnsimeServerStartup(actorSystem: ActorSystem, projectRoot: Path) {
 
-  val logger = LoggerFactory.getLogger("RobotMain")
+  implicit val ec: ExecutionContext = actorSystem.dispatcher
+  val logger = LoggerFactory.getLogger("EnsimeServer")
 
   val dotEnsimeFile= projectRoot / ".ensime"
   val cacheDir = projectRoot / ".ensime_cache"
+
+  val httpPortFile = cacheDir / "http"
+  val tcpPortFile = cacheDir / "port"
+
   val resolutionDir = cacheDir / "Resolution"
+
   val resolutionProjectDir = resolutionDir / "project"
   val resolutionSBTFile = resolutionDir / "build.sbt"
   val classpathFile = resolutionDir / "classpath"
@@ -26,15 +35,56 @@ class EnsimeSetup(projectRoot: Path) {
 
   def startServer(): Unit = {
     logger.info("Starting ensime server")
-    val classpath = read! classpathFile
-    // TODO Need to make this async - and forward the IO output %% does not support this right now
-    // TODO Override logger to log to a file?
+    logger.warn("USING HARDCODED Tools jar path - needs to be inferred from .ensime")
+
+    // TODO we don't need to know this
+    val toolsJar = "/Library/Java/JavaVirtualMachines/jdk1.8.0_40.jdk/Contents/Home/lib/tools.jar"
+
+    val baseClasspath = read ! classpathFile
+    val classpath = s"$toolsJar:$baseClasspath"
     Future {
-      %%("java", "-Densime.config=" + dotEnsimeFile
+      val result = Command(Vector.empty, Map.empty, logOutputStreamer)("java", "-Densime.config=" + dotEnsimeFile
         , "-classpath", classpath, "-Densime.explode.on.disconnect=true", "org.ensime.server.Server")(cacheDir)
+      logger.info(s"start server completed with exitCode: ${result.exitCode}")
+    }
+  }
+
+  def streamLogger(inputStream: InputStream, opTag: String): Unit = {
+
+    Future {
+      val is = new BufferedReader(new InputStreamReader(inputStream))
+      var line = is.readLine()
+      while(line != null) {
+        logger.info(s"$opTag - $line")
+        line = is.readLine()
+      }
+    }
+  }
+
+  def logOutputStreamer(wd: Path, cmd: Command[_]) = {
+    val builder = new java.lang.ProcessBuilder()
+    import collection.JavaConversions._
+    builder.environment().putAll(cmd.envArgs)
+    builder.directory(new java.io.File(wd.toString))
+    val process =
+      builder
+        .command(cmd.cmd:_*)
+        .start()
+    val stdout = process.getInputStream
+    val stderr = process.getErrorStream
+    streamLogger(stdout, "out")
+    streamLogger(stderr, "err")
+    val chunks = collection.mutable.Buffer.empty[Either[Bytes, Bytes]]
+    while(
+    // Process.isAlive doesn't exist on JDK 7 =/
+      util.Try(process.exitValue).isFailure
+    ){
+      Thread.sleep(1000)
     }
 
-
+    val res = CommandResult(process.exitValue(), chunks)
+    if (res.exitCode == 0) res
+    else throw ShelloutException(res)
   }
 
 
@@ -44,8 +94,8 @@ class EnsimeSetup(projectRoot: Path) {
 
     mkdir! resolutionDir
     mkdir! resolutionProjectDir
-    write(resolutionSBTFile, sbtClasspathScript(classpathFile))
-    write(resolutionBuildPropertiesFile, projectBuildProps)
+    write.over(resolutionSBTFile, sbtClasspathScript(classpathFile))
+    write.over(resolutionBuildPropertiesFile, projectBuildProps)
 
 
     logger.info("Running save classpath")
