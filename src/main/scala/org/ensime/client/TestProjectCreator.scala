@@ -8,9 +8,7 @@ object TestProjectCreator {
 
   def projectBuildProps = "sbt.version=0.13.9\n"
 
-  def createTestProject(scalaVersion: String): Path = {
-
-    val projectBase = Path(Path.makeTmp)
+  def createTestProject(projectBase: Path, scalaVersion: String): Unit = {
 
     logger.info(s"Creating project in $projectBase")
 
@@ -19,6 +17,8 @@ object TestProjectCreator {
 
     val srcDir = projectBase / "src" / "main" / "scala"
     val buildSBTFile = projectBase / "build.sbt"
+
+    val testFile = srcDir / "test.scala"
 
     def sbtFileContents =
       s"""|
@@ -43,6 +43,13 @@ object TestProjectCreator {
     mkdir! srcDir
     println(s"Writing build file $buildSBTFile")
     write(buildSBTFile, sbtFileContents)
+    write(testFile,
+      """//test code here
+        |val a = 1
+        |val b = 2
+        |println(a + b)
+        |
+      """.stripMargin)
     println(s"Writing props file to $projectBuildPropsFile")
     write(projectBuildPropsFile, projectBuildProps)
     val projectPluginsFile = projectDir / "plugins.sbt"
@@ -50,8 +57,5 @@ object TestProjectCreator {
       """|    // ensime-sbt is needed for the integration tests
         |addSbtPlugin("org.ensime" % "ensime-sbt" % "0.2.3")
         |""".stripMargin)
-
-
-    projectBase
   }
 }
