@@ -35,10 +35,17 @@ class EnsimeServerStartup(actorSystem: ActorSystem, projectRoot: Path) {
 
   def startServer(): Unit = {
     logger.info("Starting ensime server")
-    logger.warn("USING HARDCODED Tools jar path - needs to be inferred from .ensime")
 
-    // TODO we don't need to know this
-    val toolsJar = "/Library/Java/JavaVirtualMachines/jdk1.8.0_40.jdk/Contents/Home/lib/tools.jar"
+    val javaHome = sys.env.get("JAVA_HOME")
+    val toolsJar = javaHome match {
+      case Some(path) =>
+        val toolsJarPath = Path(path) / "lib" / "tools.jar"
+        if(!exists(toolsJarPath))
+          throw new IllegalArgumentException(s"Cannot resolve tools jar from JAVA_HOME - expecting $toolsJarPath")
+        toolsJarPath
+      case None =>
+        throw new IllegalStateException("JAVA_HOME not set")
+    }
 
     val baseClasspath = read ! classpathFile
     val classpath = s"$toolsJar:$baseClasspath"
