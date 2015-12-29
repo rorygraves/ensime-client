@@ -11,10 +11,15 @@ import akka.pattern.ask
 
 class EnsimeApiImpl(connection: ActorRef) extends EnsimeApi {
   implicit val timeout = new Timeout(30.seconds)
+
   override def connectionInfo(): ConnectionInfo = {
     val future = connection.ask(ConnectionInfoReq)
-
     Await.result(future, timeout.duration).asInstanceOf[ConnectionInfo]
+  }
+
+  override def completionsAtPoint(fileInfo: SourceFileInfo, point: Int, maxResults: Int, caseSens: Boolean, reload: Boolean): CompletionInfoList = {
+    val future = connection.ask(CompletionsReq(fileInfo, point, maxResults, caseSens, reload))
+    Await.result(future, timeout.duration).asInstanceOf[CompletionInfoList]
   }
 
   override def debugValue(loc: DebugLocation): Option[DebugValue] = ???
@@ -36,8 +41,6 @@ class EnsimeApiImpl(connection: ActorRef) extends EnsimeApi {
   override def debugRun(): Boolean = ???
 
   override def debugStepOut(threadId: DebugThreadId): Boolean = ???
-
-  override def completionsAtPoint(fileInfo: SourceFileInfo, point: Int, maxResults: Int, caseSens: Boolean, reload: Boolean): CompletionInfoList = ???
 
   override def cancelRefactor(procId: Int): Unit = ???
 
