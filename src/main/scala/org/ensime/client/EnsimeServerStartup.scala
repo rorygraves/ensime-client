@@ -31,9 +31,7 @@ class EnsimeServerStartup(actorSystem: ActorSystem, projectRoot: Path) {
   val ensimeVersion = "0.9.10-SNAPSHOT"
   def projectBuildProps = "sbt.version=0.13.9\n"
 
-
-
-  def startServer(): Unit = {
+  def startServer(): Process = {
     logger.info("Starting ensime server")
 
     val javaHome = sys.env.get("JAVA_HOME")
@@ -47,13 +45,50 @@ class EnsimeServerStartup(actorSystem: ActorSystem, projectRoot: Path) {
         throw new IllegalStateException("JAVA_HOME not set")
     }
 
+    val logbackConfigPath = cacheDir / "ensime-logback.xml"
+    write.over(logbackConfigPath, """<configuration>
+      |  <contextListener class="ch.qos.logback.classic.jul.LevelChangePropagator">
+      |    <resetJUL>true</resetJUL>
+      |  </contextListener>
+      |  <!-- Incompatible with akka? https://groups.google.com/d/msg/akka-user/YVri58taWsM/X6-XR0_i1nwJ -->
+      |  <!-- <turboFilter class="ch.qos.logback.classic.turbo.DuplicateMessageFilter" /> -->
+      |  <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+      |    <encoder>
+      |      <!-- NOTE: this truncates messages -->
+      |      <pattern>%d{HH:mm:ss.SSS} %-5level %X{akkaSource:-None} %logger{10} - %.-250msg%n</pattern>
+      |    </encoder>
+      |  </appender>
+      |  <root level="INFO">
+      |    <appender-ref ref="STDOUT" />
+      |  </root>
+      |  <logger name="org.ensime" level="INFO" />
+      |  <logger name="akka" level="WARN" />
+      |  <logger name="scala.tools" level="WARN" />
+      |  <logger name="org.ensime.server.RichPresentationCompiler" level="WARN" />
+      |</configuration>
+      |""".stripMargin)
+
     val baseClasspath = read ! classpathFile
     val classpath = s"$toolsJar:$baseClasspath"
-    Future {
-      val result = Command(Vector.empty, Map.empty, logOutputStreamer)("java", "-Densime.config=" + dotEnsimeFile
-        , "-classpath", classpath, "-Densime.explode.on.disconnect=true", "org.ensime.server.Server")(cacheDir)
-      logger.info(s"start server completed with exitCode: ${result.exitCode}")
-    }
+    startProcess(cacheDir, List("java", "-Densime.config=" + dotEnsimeFile,
+      s"-Dlogback.configurationFile=$logbackConfigPath"
+      , "-classpath", classpath, "-Densime.explode.on.disconnect=true", "org.ensime.server.Server"))
+  }
+
+
+  def startProcess(workingDir: Path, command: List[String]): Process = {
+    val builder = new java.lang.ProcessBuilder()
+//    builder.environment().putAll(cmd.envArgs)
+    builder.directory(new java.io.File(workingDir.toString))
+    val process =
+      builder
+        .command(command:_*)
+        .start()
+    val stdout = process.getInputStream
+    val stderr = process.getErrorStream
+    streamLogger(stdout, "out")
+    streamLogger(stderr, "err")
+    process
   }
 
   def streamLogger(inputStream: InputStream, opTag: String): Unit = {
@@ -67,33 +102,6 @@ class EnsimeServerStartup(actorSystem: ActorSystem, projectRoot: Path) {
       }
     }
   }
-
-  def logOutputStreamer(wd: Path, cmd: Command[_]) = {
-    val builder = new java.lang.ProcessBuilder()
-    import collection.JavaConversions._
-    builder.environment().putAll(cmd.envArgs)
-    builder.directory(new java.io.File(wd.toString))
-    val process =
-      builder
-        .command(cmd.cmd:_*)
-        .start()
-    val stdout = process.getInputStream
-    val stderr = process.getErrorStream
-    streamLogger(stdout, "out")
-    streamLogger(stderr, "err")
-    val chunks = collection.mutable.Buffer.empty[Either[Bytes, Bytes]]
-    while(
-    // Process.isAlive doesn't exist on JDK 7 =/
-      util.Try(process.exitValue).isFailure
-    ){
-      Thread.sleep(1000)
-    }
-
-    val res = CommandResult(process.exitValue(), chunks)
-    if (res.exitCode == 0) res
-    else throw ShelloutException(res)
-  }
-
 
   def create(): Unit = {
 

@@ -3,11 +3,12 @@ package org.ensime.client
 import java.io.File
 
 import akka.actor.ActorRef
+import akka.pattern.ask
 import akka.util.Timeout
 import org.ensime.api._
+
 import scala.concurrent.Await
 import scala.concurrent.duration._
-import akka.pattern.ask
 
 class EnsimeApiImpl(connection: ActorRef) extends EnsimeApi {
   implicit val timeout = new Timeout(30.seconds)
@@ -172,10 +173,4 @@ class EnsimeApiImpl(connection: ActorRef) extends EnsimeApi {
   override def typeById(id: Int): Option[TypeInfo] = ???
 
   override def debugStopVM(): Boolean = ???
-
-  /**
-    * Shutdown the server instance
-    * N.b. This will kill the server - should be moved out.
-    */
-  override def shutdownServer(): Unit = ???
 }

@@ -1,6 +1,7 @@
 package org.ensime.client
 
-import akka.actor.ActorRef
+import akka.actor.{Cancellable, ActorRef}
+import akka.io.Tcp.PeerClosed
 import org.ensime.api._
 import org.ensime.jerk.JerkEnvelopeFormats
 import org.slf4j.LoggerFactory
@@ -55,9 +56,15 @@ class EnsimeClientWebSocketActor(host: String, port: Int, path: String) extends 
     }
   }
 
+  var hbRef: Option[Cancellable] = None
+
   def scheduleHeartbeat(): Unit = {
     import scala.concurrent.duration._
-    context.system.scheduler.schedule(15.seconds, 15.seconds, self, Heartbeat)
+    hbRef = Some(context.system.scheduler.schedule(15.seconds, 15.seconds, self, Heartbeat))
+  }
+
+  override def postStop(): Unit = {
+    hbRef.foreach(_.cancel())
   }
 
   def sendToEnsime(rpcRequest: RpcRequest, sender: ActorRef): Unit = {
@@ -78,6 +85,10 @@ class EnsimeClientWebSocketActor(host: String, port: Int, path: String) extends 
       sendToEnsime(ConnectionInfoReq, self)
     case r: RpcRequest =>
       sendToEnsime(r, sender)
+    case PeerClosed =>
+      logger.info("Websocket connection closed, shutting down")
+      hbRef.foreach(_.cancel())
+      context.stop(self)
     case t : TextFrame =>
       val payload = t.payload.utf8String
       val msg = payload.parseJson.convertTo[RpcResponseEnvelope]

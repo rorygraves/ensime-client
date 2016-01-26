@@ -10,12 +10,6 @@ trait EnsimeApi {
   def connectionInfo(): ConnectionInfo
 
   /**
-    * Shutdown the server instance
-    * N.b. This will kill the server - should be moved out.
-    */
-  def shutdownServer(): Unit
-
-  /**
     * Subscribe to async events from the project, replaying previously seen events if requested.
     * The first subscriber will get all undelivered events (subsequent subscribers do not).
     * @param handler The callback handler for events
