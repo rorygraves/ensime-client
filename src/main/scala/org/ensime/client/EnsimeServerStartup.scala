@@ -7,6 +7,7 @@ import ammonite.ops._
 import org.slf4j.LoggerFactory
 
 import scala.concurrent.{ExecutionContext, Future}
+import scala.util.Try
 
 class EnsimeServerStartup(actorSystem: ActorSystem, projectRoot: Path) {
 
@@ -114,9 +115,23 @@ class EnsimeServerStartup(actorSystem: ActorSystem, projectRoot: Path) {
 
 
     logger.info("Running save classpath")
-    %%("sbt","saveClasspath")(resolutionDir)
+
+    Try(%('which, "sbt")(resolutionDir))
+    Try(%('ls, "-las", "/usr/bin/sbt")(resolutionDir))
+    Try(%('who, "am", "i")(resolutionDir))
+
+    logger.info("2222Running save classpath -----------------")
+
+    Try(%(root/'bin/'bash, "/usr/bin/sbt", "saveClasspath")(resolutionDir))
+
+    logger.info("Running save classpath -----------------")
+
+    //%%("sbt", "saveClasspath")(resolutionDir)
+
+    //logger.info("Running save classpath -----------------")
+
     logger.info("Running gen-ensime")
-    %%("sbt","gen-ensime")(projectRoot)
+    %(root/'bin/'bash, "/usr/bin/sbt", "gen-ensime")(projectRoot)
 
 
     logger.info("Workspace creation complete")
