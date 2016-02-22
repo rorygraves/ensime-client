@@ -80,7 +80,15 @@ class EnsimeApiImpl(connection: ActorRef) extends EnsimeApi {
 
   override def formatFile(fileInfo: SourceFileInfo): String = ???
 
-  override def docUriAtPoint(f: File, point: OffsetRange): Option[String] = ???
+  override def docUriAtPoint(f: File, point: OffsetRange): Option[String] = {
+    val future = connection.ask(DocUriAtPointReq(Left(f),point))
+    Some(Await.result(future, timeout.duration).asInstanceOf[String])
+  }
+
+  override def docUriAtPoint(f: File, contents: String, point: OffsetRange): Option[String] = {
+    val future = connection.ask(DocUriAtPointReq(Right(SourceFileInfo(f, Some(contents))),point))
+    Some(Await.result(future, timeout.duration).asInstanceOf[String])
+  }
 
   override def debugClearBreakpoint(file: File, line: Int): Unit = ???
 

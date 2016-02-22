@@ -82,6 +82,7 @@ trait EnsimeApi {
   def callCompletion(id: Int): Option[CallCompletionInfo]
   def importSuggestions(f: File, point: Int, names: List[String], maxResults: Int): ImportSuggestions
   def docUriAtPoint(f: File, point: OffsetRange): Option[String]
+  def docUriAtPoint(f: File, contents: String, point: OffsetRange): Option[String]
   def docUriForSymbol(typeFullName: String, memberName: Option[String], signatureString: Option[String]): Option[String]
   def publicSymbolSearch(names: List[String], maxResults: Int): SymbolSearchResults
   def usesOfSymAtPoint(f: File, point: Int): List[ERangePosition]
