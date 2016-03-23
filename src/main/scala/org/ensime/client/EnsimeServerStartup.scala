@@ -72,8 +72,11 @@ class EnsimeServerStartup(actorSystem: ActorSystem, projectRoot: Path) {
     val baseClasspath = read ! classpathFile
     val classpath = s"$toolsJar:$baseClasspath"
     startProcess(cacheDir, List("java", "-Densime.config=" + dotEnsimeFile,
-      s"-Dlogback.configurationFile=$logbackConfigPath"
-      , "-classpath", classpath, "-Densime.explode.on.disconnect=true", "org.ensime.server.Server"))
+      s"-Dlogback.configurationFile=$logbackConfigPath",
+      // TODO - These should come from the .ensime file
+      "-Dfile.encoding=UTF8", "-XX:+CMSClassUnloadingEnabled", "-XX:MaxPermSize=384m", "-XX:ReservedCodeCacheSize=192m",
+      "-Xms1536m", "-Xmx1536m", "-Xss3m",
+      "-classpath", classpath, "-Densime.explode.on.disconnect=true", "org.ensime.server.Server"))
   }
 
 
@@ -81,6 +84,8 @@ class EnsimeServerStartup(actorSystem: ActorSystem, projectRoot: Path) {
     val builder = new java.lang.ProcessBuilder()
 //    builder.environment().putAll(cmd.envArgs)
     builder.directory(new java.io.File(workingDir.toString))
+    val cmdString = command.mkString(" ")
+    logger.info(s"Starting process with commandline: $cmdString")
     val process =
       builder
         .command(command:_*)

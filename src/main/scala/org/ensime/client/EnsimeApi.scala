@@ -79,7 +79,6 @@ trait EnsimeApi {
   def typeById(id: Int): Option[TypeInfo]
   def typeByName(name: String): Option[TypeInfo]
   def typeByNameAtPoint(name: String, f: File, range: OffsetRange): Option[TypeInfo]
-  def callCompletion(id: Int): Option[CallCompletionInfo]
   def importSuggestions(f: File, point: Int, names: List[String], maxResults: Int): ImportSuggestions
   def docUriAtPoint(f: File, point: OffsetRange): Option[String]
   def docUriAtPoint(f: File, contents: String, point: OffsetRange): Option[String]

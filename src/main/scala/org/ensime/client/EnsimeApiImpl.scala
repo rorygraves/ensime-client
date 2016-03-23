@@ -174,8 +174,6 @@ class EnsimeApiImpl(connection: ActorRef) extends EnsimeApi {
 
   override def symbolAtPoint(fileName: File, point: Int): Option[SymbolInfo] = ???
 
-  override def callCompletion(id: Int): Option[CallCompletionInfo] = ???
-
   override def debugActiveVM(): Boolean = ???
 
   override def typeById(id: Int): Option[TypeInfo] = ???
