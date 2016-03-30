@@ -28,9 +28,9 @@ class EnsimeServerStartup(actorSystem: ActorSystem, projectRoot: Path) {
   val resolutionBuildPropertiesFile = resolutionProjectDir / "build.properties"
 
 
-  val scalaVersion = "2.11.7"
+  val scalaVersion = "2.11.8"
   val ensimeVersion = "0.9.10-SNAPSHOT"
-  def projectBuildProps = "sbt.version=0.13.9\n"
+  def projectBuildProps = "sbt.version=0.13.11\n"
 
   def startServer(): Process = {
     logger.info("Starting ensime server")
@@ -125,18 +125,19 @@ class EnsimeServerStartup(actorSystem: ActorSystem, projectRoot: Path) {
     Try(%('ls, "-las", "/usr/bin/sbt")(resolutionDir))
     Try(%('who, "am", "i")(resolutionDir))
 
-    logger.info("2222Running save classpath -----------------")
-
-    Try(%(root/'bin/'bash, "/usr/bin/sbt", "saveClasspath")(resolutionDir))
-
     logger.info("Running save classpath -----------------")
+
+//    Try(%(root/'bin/'bash, "/usr/local/bin/bin/sbt", "saveClasspath")(resolutionDir))
+    Try(%(root/'bin/'bash, "sbt", "saveClasspath")(resolutionDir))
+
+    //logger.info("Running save classpath -----------------")
 
     //%%("sbt", "saveClasspath")(resolutionDir)
 
     //logger.info("Running save classpath -----------------")
 
     logger.info("Running gen-ensime")
-    %(root/'bin/'bash, "/usr/bin/sbt", "gen-ensime")(projectRoot)
+    %(root/'bin/'bash, "sbt", "gen-ensime")(projectRoot)
 
 
     logger.info("Workspace creation complete")

@@ -6,7 +6,7 @@ import org.slf4j.LoggerFactory
 object TestProjectCreator {
   val logger = LoggerFactory.getLogger("TestProjectCreator")
 
-  def projectBuildProps = "sbt.version=0.13.9\n"
+  def projectBuildProps = "sbt.version=0.13.11\n"
 
   def createTestProject(projectBase: Path, scalaVersion: String): Unit = {
 
