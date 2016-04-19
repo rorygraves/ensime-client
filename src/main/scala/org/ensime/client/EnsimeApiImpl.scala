@@ -37,13 +37,9 @@ class EnsimeApiImpl(connection: ActorRef) extends EnsimeApi {
 
   override def debugSetValue(loc: DebugLocation, newValue: String): Boolean = ???
 
-  override def execRefactor(procId: Int, refactorType: RefactorType): Either[RefactorFailure, RefactorResult] = ???
-
   override def debugRun(): Boolean = ???
 
   override def debugStepOut(threadId: DebugThreadId): Boolean = ???
-
-  override def cancelRefactor(procId: Int): Unit = ???
 
   override def inspectPackageByPath(path: String): Option[PackageInfo] = ???
 
@@ -114,8 +110,6 @@ class EnsimeApiImpl(connection: ActorRef) extends EnsimeApi {
 
   override def typecheckFiles(fs: List[File]): Unit = ???
 
-  override def prepareRefactor(procId: Int, refactorDesc: RefactorDesc): Either[RefactorFailure, RefactorEffect] = ???
-
   /**
     * Request the semantic classes of symbols in the given range. These classes are intended to be used for
     * semantic highlighting.
@@ -179,4 +173,7 @@ class EnsimeApiImpl(connection: ActorRef) extends EnsimeApi {
   override def typeById(id: Int): Option[TypeInfo] = ???
 
   override def debugStopVM(): Boolean = ???
+
+  override def refactor(procId: Int, refactorDesc: RefactorDesc): Either[RefactorFailure, RefactorDiffEffect] = ???
+
 }

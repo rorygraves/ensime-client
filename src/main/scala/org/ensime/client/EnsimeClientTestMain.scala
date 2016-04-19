@@ -12,7 +12,7 @@ object EnsimeClientTestMain {
 
   def selfStartServer(system: ActorSystem): Unit = {
     val path = Path(Path.makeTmp)
-    TestProjectCreator.createTestProject(path, "2.11.7")
+    TestProjectCreator.createTestProject(path, "2.11.8")
     startServer(system, path)
     connectToServer(system, path)
 

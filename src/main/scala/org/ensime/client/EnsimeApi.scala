@@ -88,9 +88,7 @@ trait EnsimeApi {
   def typeAtPoint(f: File, range: OffsetRange): Option[TypeInfo]
   def inspectPackageByPath(path: String): Option[PackageInfo]
 
-  def prepareRefactor(procId: Int, refactorDesc: RefactorDesc): Either[RefactorFailure, RefactorEffect]
-  def execRefactor(procId: Int, refactorType: RefactorType): Either[RefactorFailure, RefactorResult]
-  def cancelRefactor(procId: Int): Unit
+  def refactor(procId: Int, refactorDesc: RefactorDesc): Either[RefactorFailure, RefactorDiffEffect]
 
   def expandSelection(filename: File, start: Int, stop: Int): FileRange
   def formatFiles(filenames: List[File]): Unit
