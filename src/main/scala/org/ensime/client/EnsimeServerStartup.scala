@@ -128,7 +128,7 @@ class EnsimeServerStartup(actorSystem: ActorSystem, projectRoot: Path) {
     logger.info("Running save classpath -----------------")
 
 //    Try(%(root/'bin/'bash, "/usr/local/bin/bin/sbt", "saveClasspath")(resolutionDir))
-    Try(%(root/'bin/'bash, "sbt", "saveClasspath")(resolutionDir))
+    Try(%(root/'bin/'bash, "sbt", "-Dsbt.log.noformat=true","saveClasspath")(resolutionDir))
 
     //logger.info("Running save classpath -----------------")
 
@@ -137,7 +137,7 @@ class EnsimeServerStartup(actorSystem: ActorSystem, projectRoot: Path) {
     //logger.info("Running save classpath -----------------")
 
     logger.info("Running gen-ensime")
-    %(root/'bin/'bash, "sbt", "gen-ensime")(projectRoot)
+    %(root/'bin/'bash, "sbt","-Dsbt.log.noformat=true", "gen-ensime")(projectRoot)
 
 
     logger.info("Workspace creation complete")
