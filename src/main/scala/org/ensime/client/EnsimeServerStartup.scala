@@ -9,7 +9,7 @@ import org.slf4j.LoggerFactory
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.Try
 
-class EnsimeServerStartup(actorSystem: ActorSystem, projectRoot: Path) {
+class EnsimeServerStartup(actorSystem: ActorSystem, projectRoot: Path, memoryConfig: MemoryConfig) {
 
   implicit val ec: ExecutionContext = actorSystem.dispatcher
   val logger = LoggerFactory.getLogger("EnsimeServer")
@@ -74,8 +74,10 @@ class EnsimeServerStartup(actorSystem: ActorSystem, projectRoot: Path) {
     startProcess(cacheDir, List("java", "-Densime.config=" + dotEnsimeFile,
       s"-Dlogback.configurationFile=$logbackConfigPath",
       // TODO - These should come from the .ensime file
-      "-Dfile.encoding=UTF8", "-XX:+CMSClassUnloadingEnabled", "-XX:MaxPermSize=384m", "-XX:ReservedCodeCacheSize=192m",
-      "-Xms1536m", "-Xmx1536m", "-Xss3m",
+      "-Dfile.encoding=UTF8", "-XX:+CMSClassUnloadingEnabled",
+      s"-XX:MaxPermSize=${memoryConfig.maxPermSizeMb}m",
+      s"-XX:ReservedCodeCacheSize=${memoryConfig.reservedCodeCacheSizeMb}m",
+      s"-Xms${memoryConfig.minMemMb}m", s"-Xmx${memoryConfig.maxMemMb}m", s"-Xss${memoryConfig.stackSizeMb}m",
       "-classpath", classpath, "-Densime.explode.on.disconnect=true", "org.ensime.server.Server"))
   }
 
