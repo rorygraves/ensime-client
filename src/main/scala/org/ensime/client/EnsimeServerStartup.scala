@@ -124,7 +124,6 @@ class EnsimeServerStartup(actorSystem: ActorSystem, projectRoot: Path, memoryCon
     logger.info("Running save classpath")
 
     Try(%('which, "sbt")(resolutionDir))
-    Try(%('ls, "-las", "/usr/bin/sbt")(resolutionDir))
     Try(%('who, "am", "i")(resolutionDir))
 
     logger.info("Running save classpath -----------------")

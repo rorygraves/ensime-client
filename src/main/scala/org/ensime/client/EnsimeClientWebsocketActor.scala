@@ -1,10 +1,9 @@
 package org.ensime.client
 
-import akka.actor.{Cancellable, ActorRef}
+import akka.actor.{ActorLogging, ActorRef, Cancellable}
 import akka.io.Tcp.PeerClosed
 import org.ensime.api._
 import org.ensime.jerk.JerkEnvelopeFormats
-import org.slf4j.LoggerFactory
 import org.suecarter.websocket.WebSocketClient
 import spray.can.websocket.UpgradedToWebSocket
 import spray.can.websocket.frame.TextFrame
@@ -17,9 +16,8 @@ case class SubscribeEventsResp(subscribed: Boolean)
 case object Heartbeat
 
 
-class EnsimeClientWebSocketActor(host: String, port: Int, path: String) extends WebSocketClient(host, port, path) {
-  val logger = LoggerFactory.getLogger("EnsimeClientWebSocketActor")
-
+class EnsimeClientWebSocketActor(host: String, port: Int, path: String) extends WebSocketClient(host, port, path) with ActorLogging {
+  
   var nextId = 1
   import JerkEnvelopeFormats._
   import spray.json._
@@ -35,10 +33,10 @@ class EnsimeClientWebSocketActor(host: String, port: Int, path: String) extends 
     requests.get(id) match {
       case Some(ref) =>
         requests -= id
-        logger.info("Got response for request " + id)
+        log.info("Got response for request " + id)
         ref ! payload
       case _ =>
-        logger.warn(s"Got response without requester $id -> $payload")
+        log.warning(s"Got response without requester $id -> $payload")
     }
   }
 
@@ -52,7 +50,7 @@ class EnsimeClientWebSocketActor(host: String, port: Int, path: String) extends 
             unprocessedEvents = unprocessedEvents :+ e
         }
       case _ =>
-        logger.error(s"Illegal state - received async message for non-async event: $payload")
+        log.error(s"Illegal state - received async message for non-async event: $payload")
     }
   }
 
@@ -60,7 +58,7 @@ class EnsimeClientWebSocketActor(host: String, port: Int, path: String) extends 
 
   def scheduleHeartbeat(): Unit = {
     import scala.concurrent.duration._
-    hbRef = Some(context.system.scheduler.schedule(15.seconds, 15.seconds, self, Heartbeat))
+    hbRef = Some(context.system.scheduler.schedule(30.seconds, 30.seconds, self, Heartbeat))
   }
 
   override def postStop(): Unit = {
@@ -72,7 +70,7 @@ class EnsimeClientWebSocketActor(host: String, port: Int, path: String) extends 
     nextId += 1
     requests += (id -> sender)
     val env = RpcRequestEnvelope(rpcRequest, id)
-    logger.info(s"Sending $env")
+    log.info(s"Sending $env")
     val json = env.toJson.prettyPrint
     connection ! TextFrame(json)
   }
@@ -86,7 +84,7 @@ class EnsimeClientWebSocketActor(host: String, port: Int, path: String) extends 
     case r: RpcRequest =>
       sendToEnsime(r, sender)
     case PeerClosed =>
-      logger.info("Websocket connection closed, shutting down")
+      log.info("Websocket connection closed, shutting down")
       hbRef.foreach(_.cancel())
       context.stop(self)
     case t : TextFrame =>
@@ -113,6 +111,6 @@ class EnsimeClientWebSocketActor(host: String, port: Int, path: String) extends 
       sendToEnsime(ConnectionInfoReq, self)
       scheduleHeartbeat()
     case x =>
-      logger.info("Got unknown message: " + x.getClass + "  " + x)
+      log.info("Got unknown message: " + x.getClass + "  " + x)
   }
 }
